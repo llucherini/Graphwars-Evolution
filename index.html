@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	</head>
+	<body>
+		<div style="position: relative;">
+			<canvas id="stage" width="900" height="600" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
+			<canvas id="plotting" width="900" height="600" style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
+		</div>
+		<form style="float:right">
+			<input type="text" id="function" />
+			<input type="button" onclick="input.send()" value="Fire!"/>
+		</form>
+		<script src="plotter.js"></script>
+		<script src="players.js"></script>
+		<script src="input.js"></script>
+	</body>
+</html>
