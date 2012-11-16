@@ -6,6 +6,7 @@ define({
     "%" : "MOD",
     "(" : "LPAREN",
     ")" : "RPAREN",
+    "," : "COMMA",
     "mod" : "MOD",
     "sin" : "SIN"
 });

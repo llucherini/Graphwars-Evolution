@@ -1,61 +1,84 @@
-define(["./tokens", "./lexer", "./parselets"], function (tokens, lexer, parselets) {
-    return {
-	Parser : function (lexer) {
-	    var tokens = lexer;
-	    var read = [];
-	    var prefixParselets = {};
-	    var inflixParselets = {};
+define(function() {
+    return function (lexer) {
+	
+	var tokens = lexer;
+	var read = [];
+	var prefixParselets = {};
+	var inflixParselets = {};
+	
+	var lookahead = function(distance) {
+	    while(distance >= read.length) {
+		read.push(tokens.next());
+	    }
 	    
-	    var lookahead = function(distance) {
-		while(distance >= read.length) {
-		    read.push(tokens.next());
-		}
-
-		return read[distance];
+	    return read[distance];
+	}
+	
+	this.consumeExpected = function (expectedTokenType) {
+	    var token = lookahead(0);
+	    if (token.type != expectedTokenType) {
+		throw "Expected token " + expectedTokenType + " but found " + token.type;
 	    }
 
-	    var consume = function () {
-		lookahead(0);
+	    return consume();
+	}
 
-		return read.shift();
+	this.consume = function () {
+	    lookahead(0);
+	    
+	    return read.shift();
+	}
+	
+	var getPrecedence = function () {
+	    var parselet = inflixParselets[lookahead(0).type];
+	    if (parselet != null) {
+		return parselet.precedence;
 	    }
+	    
+	    return 0;
+	}
 
-	    this.parseExpression = function () {
-		var token = consume();
-		var prefix = prefixParselets[token.type];
+	this.match = function(expectedTokenType) {
+	    var token = lookahead(0);
+	    if (token.type != expectedTokenType) {
+		return false;
+	    }
+	    
+	    consume();
+	    return true;
+	}
 
-		if(!prefix) {
-		    throw 'Could not parse "' + token.text + '".';
-		}
+	this.parseExpressionWithPrecedence = function (precedence) {
+	    var token = consume();
+	    var prefix = prefixParselets[token.type];
 
-		var leftExpr = prefix.parse(this, token);
+	    if(!prefix) {
+		throw 'Could not parse "' + token.text + '".';
+	    }
+	    
+	    var leftExpr = prefix.parse(this, token);
 
+	    while (precedence < getPrecedence()) {
 		token = consume();
 		var inflix = inflixParselets[token.type];
-
-		if (!inflix) {
-		    // No inflix expression, return
-		    return leftExpr;
-		}
-
-		return inflix.parse(this, leftExpr, token);
+		leftExpr = inflix.parse(this, leftExpr, token);
 	    }
 	    
-	    this.registerPrefix = function (tokenType, parselet) {
-		prefixParselets[tokenType] = parselet;
-	    }
-
-	    this.registerInflix = function (tokenType, parselet) {
-		inflixParselets[tokenType] = parselet;
-	    }
-
-	    this.prefix = function (tokenType) {
-		prefixParselets[tokenType] = new parselets.PrefixOperatorParselet();
-	    }
-
-	    this.inflix = function (tokenType) {
-		inflixParselets[tokenType] = new parselets.BinaryOperatorParselet();
-	    }
+	    return leftExpr;
 	}
-    }
+	
+	this.parseExpression = function() {
+	    return this.parseExpressionWithPrecedence(0);
+	}
+	
+	this.registerPrefix = function (tokenType, parselet) {
+	    prefixParselets[tokenType] = parselet;
+	}
+	
+	this.registerInflix = function (tokenType, parselet) {
+	    inflixParselets[tokenType] = parselet;
+	}
+
+	return this;
+    }	
 });
